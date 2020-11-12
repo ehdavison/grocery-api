@@ -64,7 +64,7 @@ router.get('/lists/:id', (req, res, next) => {
 router.patch('/lists/:id', requireToken, removeBlanks, (req, res, next) => {
     // if the client attempts to change the `owner` property by including a new
     // owner, prevent that by deleting that key/value pair
-    delete req.body.example.owner
+    delete req.body.list.owner
   
     List.findById(req.params.id)
       .then(handle404)
@@ -77,6 +77,23 @@ router.patch('/lists/:id', requireToken, removeBlanks, (req, res, next) => {
         return list.updateOne(req.body.list)
       })
       // if that succeeded, return 204 and no JSON
+      .then(() => res.sendStatus(204))
+      // if an error occurs, pass it to the handler
+      .catch(next)
+  })
+
+  // DESTROY
+// DELETE /lists/5a7db6c74d55bc51bdf39793
+router.delete('/lists/:id', requireToken, (req, res, next) => {
+    List.findById(req.params.id)
+      .then(handle404)
+      .then(list => {
+        // throw an error if current user doesn't own `list`
+        requireOwnership(req, list)
+        // delete the example ONLY IF the above didn't throw
+        list.deleteOne()
+      })
+      // send back 204 and no content if the deletion succeeded
       .then(() => res.sendStatus(204))
       // if an error occurs, pass it to the handler
       .catch(next)
